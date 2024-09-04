@@ -1,7 +1,7 @@
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'fabric-loom' version '1.7-SNAPSHOT'
 	id 'maven-publish'
-	id "io.freefair.lombok" version "8.6"
+	id "io.freefair.lombok" version "8.10"
 }
 
 java {
@@ -10,7 +10,7 @@ java {
 	}
 }
 
-apply from: 'https://raw.githubusercontent.com/DarkKronicle/GradleScripts/main/gradle/publish.gradle'
+apply from: 'https://gist.githubusercontent.com/Zumbuh/8d6e62dc38c659df881ef304cd157cad/raw/c46b4744ef52579d432a04a7311e4a915e991f7a/publish.gradle'
 
 sourceCompatibility = JavaVersion.VERSION_21
 targetCompatibility = JavaVersion.VERSION_21
