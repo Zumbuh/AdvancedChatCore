@@ -16,12 +16,12 @@ import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextBuilder;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -31,6 +31,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+
+import static net.minecraft.client.gui.screen.Screen.hasControlDown;
 
 public class AdvancedTextField extends TextFieldWidget {
 
@@ -93,7 +95,7 @@ public class AdvancedTextField extends TextFieldWidget {
 
     public static boolean isUndo(int code) {
         // Undo (Ctrl + Z)
-        return code == KeyCodes.KEY_Z && Screen.hasControlDown() && !Screen.hasAltDown();
+        return code == KeyCodes.KEY_Z && hasControlDown() && !Screen.hasAltDown();
     }
 
     /** Triggers undo for the text box */
@@ -249,16 +251,16 @@ public class AdvancedTextField extends TextFieldWidget {
             x1 = x + this.width;
         }
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder builder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
-        RenderSystem.setShader(GameRenderer::getPositionProgram);
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
         RenderSystem.setShaderColor(0.0f, 0.0f, 1.0f, 1.0f);
 //        RenderSystem.disableTexture();
         RenderSystem.enableColorLogicOp();
         RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
-        builder.vertex(x1, y2, 0);
-        builder.vertex(x2, y2, 0);
-        builder.vertex(x2, y1, 0);
-        builder.vertex(x1, y1, 0);
+        BufferBuilder builder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
+        builder.vertex(x1, y2, 0.0f)
+                .vertex(x2, y2, 0.0f)
+                .vertex(x2, y1, 0.0f)
+                .vertex(x1, y1, 0.0f);
         BufferRenderer.drawWithGlobalProgram(builder.end());
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableColorLogicOp();

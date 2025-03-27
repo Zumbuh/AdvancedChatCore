@@ -36,6 +36,9 @@ public abstract class MixinClientPlayerEntity extends Entity {
             if (this.nauseaIntensity >= 1.0f) {
                 this.nauseaIntensity = 1.0f;
             }
+            if(this.portalManager != null){
+                portalManager.setInPortal(false);
+            }
         }
     }
 

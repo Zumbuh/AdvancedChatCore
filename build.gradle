@@ -1,7 +1,7 @@
 plugins {
-	id 'fabric-loom' version '1.7-SNAPSHOT'
+	id 'fabric-loom' version '1.8.11'
 	id 'maven-publish'
-	id "io.freefair.lombok" version "8.10"
+	id 'io.freefair.lombok' version '8.10'
 }
 
 java {
@@ -38,7 +38,7 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	//modImplementation "fi.dy.masa.malilib:malilib-fabric-1.20.6:${project.malilib_version}"
-	modImplementation files("run/mods/malilib-fabric-1.21-0.19.999-sakura.6.jar")
+	modImplementation "com.github.sakura-ryoko:malilib:${project.malilib_version}"
 	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 
 	implementation "com.github.DarkKronicle.Konstruct:addons:${project.konstruct_version}"
@@ -96,7 +96,7 @@ jar {
 tasks.register('downloadExtra') {
 	def f = new File('./src/main/resources/swear_words.csv')
 	if (!f.exists()) {
-		new URL('https://raw.githubusercontent.com/surge-ai/profanity/main/profanity_en.csv').withInputStream{ i -> f.withOutputStream{ it << i }}
+		new URL('https://raw.githubusercontent.com/raga-ai-hub/raga-llm-hub/4ad51d58d007bb1bea04a0e871e58ad9150169ee/src/raga_llm_hub/utils/data_files/profanity_en.csv').withInputStream{ i -> f.withOutputStream{ it << i }}
 	}
 }
 
