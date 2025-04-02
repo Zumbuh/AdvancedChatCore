@@ -403,7 +403,7 @@ public class AdvancedChatScreen extends GuiBase {
     }
 
     @Override
-    protected void drawScreenBackground(int mouseX, int mouseY) {
+    protected void drawScreenBackground(DrawContext drawContext, int mouseX, int mouseY) {
 
     }
 
