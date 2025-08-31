@@ -40,7 +40,7 @@ public class ConfigColor extends fi.dy.masa.malilib.config.options.ConfigColor {
         if (defaultReference != null) {
             this.setValueFromString(defaultReference);
         } else {
-            this.setValueFromString(new Color(defaultValue).getString());
+            this.setIntegerValue(color.color());
         }
         onValueChanged();
     }
@@ -91,8 +91,8 @@ public class ConfigColor extends fi.dy.masa.malilib.config.options.ConfigColor {
                     this.setColor();
                     return;
                 }
-                this.value = this.getClampedValue(StringUtils.getColor(value, 0));
-                this.setIntegerValue(this.value);
+                int clamped = this.getClampedValue(StringUtils.getColor(value, 0));
+                this.setIntegerValue(clamped);
                 this.setColor();
             } else {
                 MaLiLib.LOGGER.warn(

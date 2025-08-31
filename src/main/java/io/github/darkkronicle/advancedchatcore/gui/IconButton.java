@@ -1,5 +1,7 @@
 package io.github.darkkronicle.advancedchatcore.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 import fi.dy.masa.malilib.render.RenderUtils;
 import io.github.darkkronicle.advancedchatcore.util.Color;
 import io.github.darkkronicle.advancedchatcore.util.Colors;
@@ -73,7 +75,8 @@ public class IconButton extends CleanButton {
         RenderUtils.drawRect(x, y, width, height, plusBack.color());
 
         RenderUtils.color(1, 1, 1, 1);
-        RenderUtils.bindTexture(icon);
+        GpuTexture gpuTexture = MinecraftClient.getInstance().getTextureManager().getTexture(icon).getGlTexture();
+        RenderSystem.setShaderTexture(0, gpuTexture);
         context.drawTexture(RenderLayer::getGuiTextured, icon, x + padding, y + padding, 0, 0,
                 width - (padding * 2), height - (padding * 2), iconWidth, iconHeight, iconWidth, iconHeight);
 

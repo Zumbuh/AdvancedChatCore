@@ -7,8 +7,10 @@
  */
 package io.github.darkkronicle.advancedchatcore.chat;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.platform.LogicOp;
 import fi.dy.masa.malilib.util.KeyCodes;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
@@ -16,7 +18,8 @@ import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextBuilder;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.ShaderProgramKeys;
+import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
@@ -28,6 +31,8 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -229,41 +234,19 @@ public class AdvancedTextField extends TextFieldWidget {
         }
     }
 
-    private void drawSelectionHighlight(int x1, int y1, int x2, int y2) {
-        int x = getX();
-        int y = getY();
-        int i;
-        if (x1 < x2) {
-            i = x1;
-            x1 = x2;
-            x2 = i;
-        }
-        if (y1 < y2) {
-            i = y1;
-            y1 = y2;
-            y2 = i;
-        }
-        if (x2 > x + this.width) {
-            x2 = x + this.width;
-        }
-        if (x1 > x + this.width) {
-            x1 = x + this.width;
-        }
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder builder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
-        RenderSystem.setShaderColor(0.0f, 0.0f, 1.0f, 1.0f);
-//        RenderSystem.disableTexture();
-        RenderSystem.enableColorLogicOp();
-        RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
-        builder.vertex(x1, y2, 0);
-        builder.vertex(x2, y2, 0);
-        builder.vertex(x2, y1, 0);
-        builder.vertex(x1, y1, 0);
-        BufferRenderer.drawWithGlobalProgram(builder.end());
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableColorLogicOp();
-//        RenderSystem.enableTexture();
+    public void drawSelectionHighlight(int x1, int y1, int x2, int y2) {
+        GL11.glEnable(GL11.GL_COLOR_LOGIC_OP);
+        GL11.glLogicOp(GL11.GL_OR_REVERSE);
+        GL11.glColorMask(true, true, true, false);
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glColor4f(0.0F, 0.0F, 1.0F, 1.0F);
+        GL11.glVertex3f((float)x1, (float)y2, 0.0F);
+        GL11.glVertex3f((float)x2, (float)y2, 0.0F);
+        GL11.glVertex3f((float)x2, (float)y1, 0.0F);
+        GL11.glVertex3f((float)x1, (float)y1, 0.0F);
+        GL11.glEnd();
+        GL11.glColorMask(true, true, true, true);
+        GL11.glDisable(GL11.GL_COLOR_LOGIC_OP);
     }
 
     @Override

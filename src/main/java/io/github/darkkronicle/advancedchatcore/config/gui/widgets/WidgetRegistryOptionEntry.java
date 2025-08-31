@@ -7,6 +7,7 @@
  */
 package io.github.darkkronicle.advancedchatcore.config.gui.widgets;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.button.ButtonBase;
@@ -111,7 +112,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
                 context);
 
         RenderUtils.color(1f, 1f, 1f, 1f);
-        RenderSystem.disableBlend();
+        GlStateManager._disableBlend();
 
         super.render(mouseX, mouseY, selected, context);
 

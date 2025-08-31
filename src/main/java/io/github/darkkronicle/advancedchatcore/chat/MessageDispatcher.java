@@ -16,6 +16,9 @@ import io.github.darkkronicle.advancedchatcore.util.StringInsert;
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
 import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +44,8 @@ public class MessageDispatcher {
     private static final MessageDispatcher INSTANCE = new MessageDispatcher();
     private ArrayList<IMessageProcessor> processors = new ArrayList<>();
     private ArrayList<IMessageFilter> preFilters = new ArrayList<>();
+    private static final ThreadLocal<Boolean> isLogging = ThreadLocal.withInitial(() -> false);
+
 
     public static MessageDispatcher getInstance() {
         return INSTANCE;
@@ -71,12 +76,17 @@ public class MessageDispatcher {
                                 match,
                                 (current, match1) -> {
                                     String url = match1.match;
-                                    if (!SearchUtils.isMatch(
-                                            match1.match, "(http(s)?:\\/\\/.)", FindType.REGEX)) {
+                                    if (!SearchUtils.isMatch(match1.match, "(http(s)?:\\/\\/.)", FindType.REGEX)) {
                                         url = "https://" + url;
                                     }
-                                    if (current.getStyle().getClickEvent() == null) {
-                                        return Text.literal(match1.match).fillStyle(current.getStyle().withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url)));
+                                    try {
+                                        URI uri = new URI(url);
+                                        ClickEvent clickEvent = new ClickEvent.OpenUrl(uri);
+                                        if (current.getStyle().getClickEvent() == null) {
+                                            return Text.literal(match1.match).fillStyle(current.getStyle().withClickEvent(clickEvent));
+                                        }
+                                    } catch (URISyntaxException e) {
+                                        return Text.literal(match1.match).fillStyle(current.getStyle());
                                     }
                                     return MutableText.of(current.getContent()).fillStyle(current.getStyle());
                                 });
@@ -86,17 +96,21 @@ public class MessageDispatcher {
                 },
                 -1);
         registerPreFilter(
-                (IMessageProcessor)
-                        (text, orig) -> {
-                            LogManager.getLogger()
-                                    .info(
-                                            "[CHAT] {}",
-                                            text.getString()
-                                                    .replaceAll("\r", "\\\\r")
-                                                    .replaceAll("\n", "\\\\n"));
-                            return true;
-                        },
-                -1);
+                (IMessageProcessor) (text, orig) -> {
+                    if (isLogging.get()) return false;
+                    try {
+                        isLogging.set(true);
+                        LogManager.getLogger()
+                                .info("[CHAT] {}", text.getString()
+                                        .replaceAll("\r", "\\\\r")
+                                        .replaceAll("\n", "\\\\n"));
+                    } finally {
+                        isLogging.set(false);
+                    }
+                    return true;
+                },
+                -1
+        );
     }
 
     /**

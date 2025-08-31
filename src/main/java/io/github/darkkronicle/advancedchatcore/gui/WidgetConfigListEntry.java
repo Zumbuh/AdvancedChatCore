@@ -7,6 +7,7 @@
  */
 package io.github.darkkronicle.advancedchatcore.gui;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import fi.dy.masa.malilib.gui.widgets.WidgetBase;
@@ -90,7 +91,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
         renderEntry(mouseX, mouseY, selected, context);
 
         RenderUtils.color(1f, 1f, 1f, 1f);
-        RenderSystem.disableBlend();
+        GlStateManager._disableBlend();
 
         this.drawTextFields(mouseX, mouseY, context);
 
