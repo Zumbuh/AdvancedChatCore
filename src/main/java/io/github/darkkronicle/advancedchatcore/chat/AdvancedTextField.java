@@ -190,7 +190,8 @@ public class AdvancedTextField extends TextFieldWidget {
                 cursorX = textRenderer.getWidth(text.getString().substring(0, cursor - charCount));
                 cursorRow = line;
             }
-            endX = context.drawTextWithShadow(textRenderer, text, x, renderY, color);
+            endX = textRenderer.getWidth(text);
+            context.drawTextWithShadow(textRenderer, text, x, renderY, color);
             if (selection) {
                 if (!started && selStart >= charCount && selStart <= text.getString().length() + charCount) {
                     started = true;
@@ -198,19 +199,19 @@ public class AdvancedTextField extends TextFieldWidget {
                     if (selEnd > charCount && selEnd <= text.getString().length() + charCount) {
                         ended = true;
                         int sEndX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
-                        drawSelectionHighlight(x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        drawSelectionHighlight(context,x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
                     } else {
                         int sEndX = textRenderer.getWidth(text);
-                        drawSelectionHighlight(x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        drawSelectionHighlight(context, x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
                     }
                 } else if (started && !ended) {
                     if (selEnd >= charCount && selEnd <= text.getString().length() + charCount) {
                         ended = true;
                         int sEndX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
-                        drawSelectionHighlight(x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        drawSelectionHighlight(context, x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
                     } else {
                         int sEndX = textRenderer.getWidth(text);
-                        drawSelectionHighlight(x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        drawSelectionHighlight(context, x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
                     }
                 }
             }
@@ -234,19 +235,23 @@ public class AdvancedTextField extends TextFieldWidget {
         }
     }
 
-    public void drawSelectionHighlight(int x1, int y1, int x2, int y2) {
-        GL11.glEnable(GL11.GL_COLOR_LOGIC_OP);
-        GL11.glLogicOp(GL11.GL_OR_REVERSE);
-        GL11.glColorMask(true, true, true, false);
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glColor4f(0.0F, 0.0F, 1.0F, 1.0F);
-        GL11.glVertex3f((float)x1, (float)y2, 0.0F);
-        GL11.glVertex3f((float)x2, (float)y2, 0.0F);
-        GL11.glVertex3f((float)x2, (float)y1, 0.0F);
-        GL11.glVertex3f((float)x1, (float)y1, 0.0F);
-        GL11.glEnd();
-        GL11.glColorMask(true, true, true, true);
-        GL11.glDisable(GL11.GL_COLOR_LOGIC_OP);
+    private void drawSelectionHighlight(DrawContext context, int x1, int y1, int x2, int y2) {
+        int x = getX();
+        int y = getY();
+        if (x1 > x2) {
+            int t = x1;
+            x1 = x2;
+            x2 = t;
+        }
+        if (y1 > y2) {
+            int t = y1;
+            y1 = y2;
+            y2 = t;
+        }
+        if (x2 > x + this.width) x2 = x + this.width;
+        if (x1 > x + this.width) x1 = x + this.width;
+        int highlightColor = 0x800000FF;
+        context.fill(x1, y1, x2, y2, highlightColor);
     }
 
     @Override

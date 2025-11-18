@@ -8,6 +8,7 @@ import io.github.darkkronicle.advancedchatcore.util.Colors;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -62,7 +63,7 @@ public class IconButton extends CleanButton {
     }
 
     @Override
-    public void render(int mouseX, int mouseY, boolean unused, DrawContext context) {
+    public void render(DrawContext context, int mouseX, int mouseY, boolean unused) {
         int relMX = mouseX - x;
         int relMY = mouseY - y;
         hovered = relMX >= 0 && relMX <= width && relMY >= 0 && relMY <= height;
@@ -74,12 +75,20 @@ public class IconButton extends CleanButton {
 
         RenderUtils.drawRect(x, y, width, height, plusBack.color());
 
-        RenderUtils.color(1, 1, 1, 1);
+        // RenderUtils.color(1, 1, 1, 1);
         GpuTexture gpuTexture = MinecraftClient.getInstance().getTextureManager().getTexture(icon).getGlTexture();
-        RenderSystem.setShaderTexture(0, gpuTexture);
-        context.drawTexture(RenderLayer::getGuiTextured, icon, x + padding, y + padding, 0, 0,
-                width - (padding * 2), height - (padding * 2), iconWidth, iconHeight, iconWidth, iconHeight);
-
+        context.fill(x, y, x + width, y + height, plusBack.color());
+        context.drawTexture(
+                RenderPipelines.GUI_TEXTURED,
+                icon,
+                x + padding,
+                y + padding,
+                0, 0,
+                width - padding * 2,
+                height - padding * 2,
+                iconWidth,
+                iconHeight
+        );
         if (hovered && onHover != null) {
             context.drawCenteredTextWithShadow(
                     MinecraftClient.getInstance().textRenderer,
