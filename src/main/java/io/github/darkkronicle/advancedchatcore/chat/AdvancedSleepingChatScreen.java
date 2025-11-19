@@ -11,6 +11,7 @@ import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.KeyCodes;
 import fi.dy.masa.malilib.util.StringUtils;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 
@@ -36,23 +37,25 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
         this.stopSleeping();
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyInput input) {
+        int keyCode = input.key();
+        int scanCode = input.scancode();
+        int modifiers = input.modifiers();
         if (keyCode == KeyCodes.KEY_ESCAPE) {
             this.stopSleeping();
-        } else if (keyCode == KeyCodes.KEY_ENTER || keyCode == KeyCodes.KEY_KP_ENTER) {
+            return true;
+        }
+        if (keyCode == KeyCodes.KEY_ENTER || keyCode == KeyCodes.KEY_KP_ENTER) {
             String string = this.chatField.getText().trim();
             if (!string.isEmpty()) {
                 MessageSender.getInstance().sendMessage(string);
             }
-
             this.chatField.setText("");
             this.client.inGameHud.getChatHud().resetScroll();
-            // Prevents really weird interactions with chat history
             resetCurrentMessage();
             return true;
         }
-
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     private void stopSleeping() {

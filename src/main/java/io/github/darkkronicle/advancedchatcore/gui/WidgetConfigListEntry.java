@@ -20,7 +20,10 @@ import lombok.Getter;
 import lombok.Setter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.util.math.MatrixStack;
 
 @Environment(EnvType.CLIENT)
@@ -131,55 +134,51 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
     }
 
     @Override
-    protected boolean onKeyTypedImpl(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyTypedImpl(KeyInput input) {
         if (getTextFields() == null) {
             return false;
         }
         for (TextFieldWrapper<GuiTextFieldGeneric> field : getTextFields()) {
             if (field != null && field.isFocused()) {
-                return field.onKeyTyped(keyCode, scanCode, modifiers);
+                return field.onKeyTyped(input);
             }
         }
         return false;
     }
 
     @Override
-    protected boolean onCharTypedImpl(char charIn, int modifiers) {
+    protected boolean onCharTypedImpl(CharInput input) {
         if (getTextFields() != null) {
             for (TextFieldWrapper<GuiTextFieldGeneric> field : getTextFields()) {
-                if (field != null && field.onCharTyped(charIn, modifiers)) {
+                if (field != null && field.onCharTyped(input)) {
                     return true;
                 }
             }
         }
 
-        return super.onCharTypedImpl(charIn, modifiers);
+        return super.onCharTypedImpl(input);
     }
 
     @Override
-    protected boolean onMouseClickedImpl(int mouseX, int mouseY, int mouseButton) {
-        if (super.onMouseClickedImpl(mouseX, mouseY, mouseButton)) {
+    protected boolean onMouseClickedImpl(Click click, boolean doubleClick) {
+        if (super.onMouseClickedImpl(click, doubleClick)) {
             return true;
         }
-
         boolean ret = false;
-
         if (getTextFields() != null) {
             for (TextFieldWrapper<GuiTextFieldGeneric> field : getTextFields()) {
                 if (field != null) {
-                    ret = field.getTextField().mouseClicked(mouseX, mouseY, mouseButton);
+                    ret |= field.getTextField().mouseClicked(click, doubleClick);
                 }
             }
         }
-
         if (!this.subWidgets.isEmpty()) {
             for (WidgetBase widget : this.subWidgets) {
-                ret |=
-                        widget.isMouseOver(mouseX, mouseY)
-                                && widget.onMouseClicked(mouseX, mouseY, mouseButton);
+                if (widget.isMouseOver((int) click.x(), (int) click.y())) {
+                    ret |= widget.onMouseClicked(click, doubleClick);
+                }
             }
         }
-
         return ret;
     }
 

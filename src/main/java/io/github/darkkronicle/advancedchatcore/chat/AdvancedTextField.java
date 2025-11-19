@@ -17,8 +17,11 @@ import io.github.darkkronicle.advancedchatcore.util.StringMatch;
 import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextBuilder;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -86,9 +89,13 @@ public class AdvancedTextField extends TextFieldWidget {
         focusedTicks++;
     }
 
-    @Override
     public void setRenderTextProvider(BiFunction<String, Integer, OrderedText> renderTextProvider) {
         this.renderTextProvider = renderTextProvider;
+    }
+
+
+    protected OrderedText getRenderableText() {
+        return this.renderTextProvider.apply(this.getText(), 0);
     }
 
     @Override
@@ -99,7 +106,7 @@ public class AdvancedTextField extends TextFieldWidget {
 
     public static boolean isUndo(int code) {
         // Undo (Ctrl + Z)
-        return code == KeyCodes.KEY_Z && Screen.hasControlDown() && !Screen.hasAltDown();
+        return code == KeyCodes.KEY_Z && MinecraftClient.getInstance().isCtrlPressed() && !MinecraftClient.getInstance().isAltPressed();
     }
 
     /** Triggers undo for the text box */
@@ -149,15 +156,29 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-
+    public boolean mouseClicked(Click click, boolean doubled) {
         int renderY = getY() - (renderLines.size() - 1) * (textRenderer.fontHeight + 2);
-        if (mouseY < renderY - 2 || mouseY > getY() + height + 2 || mouseX < getX() - 2 || mouseX > getX() + width + 4) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        if (mouseY < renderY - 2
+                || mouseY > getY() + height + 2
+                || mouseX < getX() - 2
+                || mouseX > getX() + width + 4) {
             return false;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        if (!this.isInteractable()) {
+            return false;
+        }
+        if (this.isValidClickButton(click.buttonInfo())) {
+            boolean inside = this.isMouseOver(mouseX, mouseY);
+            if (inside) {
+                this.playDownSound(MinecraftClient.getInstance().getSoundManager());
+                this.onClick(click, doubled);
+                return true;
+            }
+        }
+        return false;
     }
-
 
     @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -336,19 +357,20 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (!this.isActive()) {
+    public boolean keyPressed(KeyInput input) {
+        if (!this.isInteractable() || !this.isFocused()) {
             return false;
         }
-        if (!isUndo(keyCode)) {
-            return super.keyPressed(keyCode, scanCode, modifiers);
+        int keyCode = input.key();
+        if (isUndo(keyCode)) {
+            if (MinecraftClient.getInstance().isShiftPressed()) {
+                redo();
+            } else {
+                undo();
+            }
+            return true;
         }
-        if (Screen.hasShiftDown()) {
-            redo();
-        } else {
-            undo();
-        }
-        return true;
+        return super.keyPressed(input);
     }
 
     @Override

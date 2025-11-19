@@ -7,6 +7,7 @@
  */
 package io.github.darkkronicle.advancedchatcore.chat;
 
+import fi.dy.masa.malilib.util.data.Color4f;
 import io.github.darkkronicle.advancedchatcore.AdvancedChatCore;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.interfaces.IMessageProcessor;
@@ -28,10 +29,18 @@ import org.jetbrains.annotations.Nullable;
 @Environment(EnvType.CLIENT)
 public class ChatHistoryProcessor implements IMessageProcessor {
 
+    private static final ThreadLocal<Boolean> isSending = ThreadLocal.withInitial(() -> false);
+
     private static boolean sendToHud(Text text, @Nullable MessageSignatureData signature, MessageIndicator indicator) {
+        if (isSending.get()) return false;
         if (AdvancedChatCore.FORWARD_TO_HUD) {
-            ((MixinChatHudInvoker) MinecraftClient.getInstance().inGameHud.getChatHud()).invokeAddMessage(
-                    text, signature, indicator);
+            try {
+                isSending.set(true);
+                ((MixinChatHudInvoker) MinecraftClient.getInstance().inGameHud.getChatHud())
+                        .invokeAddMessage(text, signature, indicator);
+            } finally {
+                isSending.set(false);
+            }
             return true;
         }
         return false;

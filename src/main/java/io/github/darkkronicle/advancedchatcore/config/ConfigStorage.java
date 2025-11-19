@@ -258,11 +258,10 @@ public class ConfigStorage implements IConfigHandler {
     }
 
     public static void loadFromFile() {
-        File v3 = FileUtils.getConfigDirectory().toPath().resolve(CONFIG_FILE_NAME).toFile();
+        File v3 = FileUtils.getConfigDirectoryAsPath().resolve(CONFIG_FILE_NAME).toFile();
         File configFile;
         if (v3.exists()
-                && !FileUtils.getConfigDirectory()
-                        .toPath()
+                && !FileUtils.getConfigDirectoryAsPath()
                         .resolve("advancedchat")
                         .resolve(CONFIG_FILE_NAME)
                         .toFile()
@@ -270,8 +269,7 @@ public class ConfigStorage implements IConfigHandler {
             configFile = v3;
         } else {
             configFile =
-                    FileUtils.getConfigDirectory()
-                            .toPath()
+                    FileUtils.getConfigDirectoryAsPath()
                             .resolve("advancedchat")
                             .resolve(CONFIG_FILE_NAME)
                             .toFile();
@@ -327,7 +325,7 @@ public class ConfigStorage implements IConfigHandler {
     }
 
     public static void saveFromFile() {
-        File dir = FileUtils.getConfigDirectory().toPath().resolve("advancedchat").toFile();
+        File dir = FileUtils.getConfigDirectoryAsPath().resolve("advancedchat").toFile();
 
         if ((dir.exists() && dir.isDirectory()) || dir.mkdirs()) {
             JsonObject root = new JsonObject();

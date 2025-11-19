@@ -14,39 +14,39 @@ import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.screen.Screen;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 @Environment(EnvType.CLIENT)
 @Mixin(MinecraftClient.class)
 public class MixinMinecraftClient {
 
     @Inject(method = "disconnect", at = @At("RETURN"))
-    private void onDisconnect(Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
+    private void onDisconnect(Text reason, CallbackInfo ci) {
         // Clear data on disconnect
         if (ConfigStorage.General.CLEAR_ON_DISCONNECT.config.getBooleanValue()) {
             ChatHistory.getInstance().clearAll();
         }
     }
 
-    @Inject(method = "openChatScreen(Ljava/lang/String;)V",
-            at = @At(value = "HEAD"), cancellable = true)
-    public void openChatScreen(String text, CallbackInfo ci) {
-        MinecraftClient.getInstance().setScreen(new AdvancedChatScreen(text));
+    @Inject(method = "openChatScreen", at = @At("HEAD"), cancellable = true)
+    private void openChatScreen(ChatHud.ChatMethod method, CallbackInfo ci) {
+        MinecraftClient.getInstance().setScreen(new AdvancedChatScreen(""));
         ci.cancel();
     }
 
-    @ModifyArg(method = "tick()V",
+
+    @ModifyArg(method = "tick",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V", ordinal = 1))
-    public Screen openSleepingChatScreen(@Nullable Screen screen) {
-        return new AdvancedSleepingChatScreen();
+                    target = "Lnet/minecraft/client/gui/hud/ChatHud;setClientScreen(Lnet/minecraft/client/gui/hud/ChatHud$ChatMethod;Lnet/minecraft/client/gui/screen/ChatScreen$Factory;)V"))
+    public ChatHud.ChatMethod openSleepingChatScreen(ChatHud.ChatMethod method) {
+        MinecraftClient.getInstance().setScreen(new AdvancedSleepingChatScreen());
+        return method;
     }
 }

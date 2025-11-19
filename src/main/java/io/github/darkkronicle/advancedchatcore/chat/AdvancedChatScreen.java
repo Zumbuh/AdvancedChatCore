@@ -19,8 +19,13 @@ import io.github.darkkronicle.advancedchatcore.util.Color;
 import io.github.darkkronicle.advancedchatcore.util.RowList;
 import lombok.Getter;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.ChatHud;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
@@ -29,6 +34,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -108,11 +114,11 @@ public class AdvancedChatScreen extends GuiBase {
     }
 
     @Override
-    public boolean charTyped(char charIn, int modifiers) {
+    public boolean charTyped(CharInput input) {
         if (passEvents) {
             return true;
         }
-        return super.charTyped(charIn, modifiers);
+        return super.charTyped(input);
     }
 
     public void initGui() {
@@ -219,22 +225,26 @@ public class AdvancedChatScreen extends GuiBase {
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased(KeyInput input) {
         if (passEvents) {
-            InputUtil.Key key = InputUtil.fromKeyCode(keyCode, scanCode);
+            InputUtil.Key key = InputUtil.fromKeyCode(input);
             KeyBinding.setKeyPressed(key, false);
         }
         return false;
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyInput input) {
+        int keyCode = input.key();
+        int scanCode = input.scancode();
+        int modifiers = input.modifiers();
         if (!passEvents) {
             for (AdvancedChatScreenSection section : sections) {
                 if (section.keyPressed(keyCode, scanCode, modifiers)) {
                     return true;
                 }
             }
-            if (super.keyPressed(keyCode, scanCode, modifiers)) {
+
+            if (super.keyPressed(input)) {
                 return true;
             }
         }
@@ -279,7 +289,7 @@ public class AdvancedChatScreen extends GuiBase {
         }
         if (passEvents) {
             this.chatField.setText("");
-            InputUtil.Key key = InputUtil.fromKeyCode(keyCode, scanCode);
+            InputUtil.Key key = InputUtil.fromKeyCode(input);
             KeyBinding.setKeyPressed(key, true);
             KeyBinding.onKeyPressed(key);
             return true;
@@ -302,7 +312,7 @@ public class AdvancedChatScreen extends GuiBase {
                 return true;
             }
         }
-        if (!hasShiftDown()) {
+        if (!MinecraftClient.getInstance().isShiftPressed()) {
             verticalAmount *= 7.0D;
         }
 
@@ -312,7 +322,10 @@ public class AdvancedChatScreen extends GuiBase {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(Click click, boolean doubleClick) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        int button = click.buttonInfo().button();
         for (AdvancedChatScreenSection section : sections) {
             if (section.mouseClicked(mouseX, mouseY, button)) {
                 return true;
@@ -328,30 +341,42 @@ public class AdvancedChatScreen extends GuiBase {
                 return true;
             }
         }
-        return (this.chatField.mouseClicked(mouseX, mouseY, button)
-                || super.mouseClicked(mouseX, mouseY, button));
+        if (this.chatField.mouseClicked(click, doubleClick)) {
+            return true;
+        }
+        return super.mouseClicked(click, doubleClick);
     }
 
+
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int mouseButton) {
+    public boolean mouseReleased(Click click) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        int button = click.buttonInfo().button();
+
         for (AdvancedChatScreenSection section : sections) {
-            if (section.mouseReleased(mouseX, mouseY, mouseButton)) {
+            if (section.mouseReleased(mouseX, mouseY, button)) {
                 return true;
             }
         }
-        return super.mouseReleased(mouseX, mouseY, mouseButton);
+        return super.mouseReleased(click);
     }
 
     @Override
-    public boolean mouseDragged(
-            double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+        double mouseX = click.x();
+        double mouseY = click.y();
+        int button = click.button();
+
         for (AdvancedChatScreenSection section : sections) {
-            if (section.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+            if (section.mouseDragged(mouseX, mouseY, button, offsetX, offsetY)) {
                 return true;
             }
         }
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+
+        return super.mouseDragged(click, offsetX, offsetY);
     }
+
 
     @Override
     protected void insertText(String text, boolean override) {
