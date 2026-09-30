@@ -1,21 +1,23 @@
 package io.github.darkkronicle.advancedchatcore.gui;
 
+import io.github.darkkronicle.advancedchatcore.util.CursorUtil;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import fi.dy.masa.malilib.gui.widgets.WidgetBase;
 import io.github.darkkronicle.advancedchatcore.util.Color;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.MouseButtonEvent;
+import fi.dy.masa.malilib.render.GuiContext;
+import net.minecraft.network.chat.Component;
 
 import java.util.LinkedHashMap;
 
 public class ContextMenu extends WidgetBase {
 
-    private final LinkedHashMap<Text, ContextConsumer> options;
-    private Text hoveredEntry = null;
+    private final LinkedHashMap<Component, ContextConsumer> options;
+    private Component hoveredEntry = null;
 
     @Getter
     private final int contextX;
@@ -35,11 +37,11 @@ public class ContextMenu extends WidgetBase {
     @Getter
     private Color hover;
 
-    public ContextMenu(int x, int y, LinkedHashMap<Text, ContextConsumer> options, Runnable close) {
+    public ContextMenu(int x, int y, LinkedHashMap<Component, ContextConsumer> options, Runnable close) {
         this(x, y, options, close, new Color(0, 0, 0, 200), new Color(255, 255, 255, 100));
     }
 
-    public ContextMenu(int x, int y, LinkedHashMap<Text, ContextConsumer> options, Runnable close, Color background, Color hover) {
+    public ContextMenu(int x, int y, LinkedHashMap<Component, ContextConsumer> options, Runnable close, Color background, Color hover) {
         super(x, y, 10, 10);
         this.contextX = x;
         this.contextY = y;
@@ -51,10 +53,10 @@ public class ContextMenu extends WidgetBase {
     }
 
     public void updateDimensions() {
-        setWidth(TextUtil.getMaxLengthString(options.keySet().stream().map(Text::getString).toList()) + 4);
-        setHeight(options.size() * (textRenderer.fontHeight + 2));
-        int windowWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
-        int windowHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        setWidth(TextUtil.getMaxLengthString(options.keySet().stream().map(Component::getString).toList()) + 4);
+        setHeight(options.size() * (textRenderer.lineHeight + 2));
+        int windowWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        int windowHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         if (x + width > windowWidth) {
             x = windowWidth - width;
         }
@@ -64,7 +66,7 @@ public class ContextMenu extends WidgetBase {
     }
 
     @Override
-    public boolean onMouseClicked(Click click, boolean doubleClick) {
+    public boolean onMouseClicked(MouseButtonEvent click, boolean doubleClick) {
         boolean success = super.onMouseClicked(click, doubleClick);
         if (success) {
             return true;
@@ -76,7 +78,7 @@ public class ContextMenu extends WidgetBase {
     }
 
     @Override
-    protected boolean onMouseClickedImpl(Click click, boolean doubleClick) {
+    protected boolean onMouseClickedImpl(MouseButtonEvent click, boolean doubleClick) {
         if (click.button() != 0) {
             return false;
         }
@@ -89,22 +91,25 @@ public class ContextMenu extends WidgetBase {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, boolean selected) {
+    public void render(GuiContext context, int mouseX, int mouseY, boolean selected) {
         drawRect(context, x, y, width, height, background.color());
         int rX = x + 2;
         int rY = y + 2;
         hoveredEntry = null;
-        for (Text option : options.keySet()) {
+        for (Component option : options.keySet()) {
             if (mouseX >= x && mouseX <= x + width && mouseY >= rY - 2 && mouseY < rY + fontHeight + 1) {
                 hoveredEntry = option;
-                drawRect(context, rX - 2, rY - 2, width, textRenderer.fontHeight + 2, hover.color());
+                drawRect(context, rX - 2, rY - 2, width, textRenderer.lineHeight + 2, hover.color());
             }
-            context.drawTextWithShadow(textRenderer, option, rX, rY, -1);
-            rY += textRenderer.fontHeight + 2;
+            context.drawString(textRenderer, option, rX, rY, -1);
+            rY += textRenderer.lineHeight + 2;
+        }
+        if (hoveredEntry != null) {
+            CursorUtil.requestCursor(context, CursorTypes.POINTING_HAND);
         }
     }
 
-    private static void drawRect(DrawContext context, int x, int y, int width, int height, int color) {
+    private static void drawRect(GuiContext context, int x, int y, int width, int height, int color) {
         context.fill(x, y, x + width, y + height, color);
     }
 

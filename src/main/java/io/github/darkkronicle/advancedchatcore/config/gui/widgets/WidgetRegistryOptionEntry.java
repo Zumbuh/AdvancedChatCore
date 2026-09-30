@@ -7,7 +7,6 @@
  */
 package io.github.darkkronicle.advancedchatcore.config.gui.widgets;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.button.ButtonBase;
@@ -22,9 +21,8 @@ import io.github.darkkronicle.advancedchatcore.util.Colors;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.util.math.MatrixStack;
+import fi.dy.masa.malilib.render.GuiContext;
+import net.minecraft.client.gui.screens.Screen;
 
 @Environment(EnvType.CLIENT)
 public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
@@ -77,12 +75,13 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, boolean selected) {
+    public void render(GuiContext context, int mouseX, int mouseY, boolean selected) {
         // RenderUtils.color(1f, 1f, 1f, 1f);
 
         // Draw a lighter background for the hovered and the selected entry
         if (selected || this.isMouseOver(mouseX, mouseY)) {
             RenderUtils.drawRect(
+                    context,
                     this.x,
                     this.y,
                     this.width,
@@ -90,6 +89,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
                     Colors.getInstance().getColorOrWhite("white").withAlpha(150).color());
         } else if (this.isOdd) {
             RenderUtils.drawRect(
+                    context,
                     this.x,
                     this.y,
                     this.width,
@@ -97,6 +97,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
                     Colors.getInstance().getColorOrWhite("white").withAlpha(70).color());
         } else {
             RenderUtils.drawRect(
+                    context,
                     this.x,
                     this.y,
                     this.width,
@@ -112,7 +113,6 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
         );
 
         // RenderUtils.color(1f, 1f, 1f, 1f);
-        GlStateManager._disableBlend();
 
         super.render(context, mouseX, mouseY, selected);
 
@@ -121,7 +121,7 @@ public class WidgetRegistryOptionEntry<T extends ConfigRegistryOption<?>>
 
     @Override
     public void postRenderHovered(
-            DrawContext context, int mouseX, int mouseY, boolean selected) {
+            GuiContext context, int mouseX, int mouseY, boolean selected) {
         super.postRenderHovered(context, mouseX, mouseY, selected);
 
         if (hoverLines == null) {

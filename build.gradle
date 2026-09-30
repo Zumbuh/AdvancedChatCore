@@ -1,21 +1,29 @@
 plugins {
-	id 'fabric-loom' version '1.11.1'
+	id 'net.fabricmc.fabric-loom' version '1.17.+'
 	id 'maven-publish'
 	id "io.freefair.lombok" version "8.10"
 }
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(25)
 	}
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
+
+lombok {
+	version = project.lombok_version
+}
+
+base {
+	archivesName = project.archives_base_name
+}
+
+ext.archivesBaseName = project.archives_base_name
 
 apply from: 'https://gist.githubusercontent.com/Zumbuh/8d6e62dc38c659df881ef304cd157cad/raw/c46b4744ef52579d432a04a7311e4a915e991f7a/publish.gradle'
 
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
-
-archivesBaseName = project.archives_base_name
 version = "${project.minecraft_version}-${project.mod_version}"
 group = project.maven_group
 
@@ -27,6 +35,8 @@ if (file("extra.properties").exists()) {
 repositories {
 	mavenCentral()
 	maven { url 'https://masa.dy.fi/maven' }
+	maven { url 'https://masa.dy.fi/maven/sakura-ryoko' }
+	maven { url 'https://maven.fallenbreath.me/releases' }
 	maven { url 'https://maven.terraformersmc.com/releases/' }
 	maven { url 'https://jitpack.io' }
 	maven { url 'https://maven.wispforest.io' }
@@ -34,12 +44,11 @@ repositories {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	//modImplementation "fi.dy.masa.malilib:malilib-fabric-1.20.6:${project.malilib_version}"
-	modImplementation "com.github.sakura-ryoko:malilib:${project.malilib_version}"
-	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	//implementation "fi.dy.masa.malilib:malilib-fabric-1.20.6:${project.malilib_version}"
+	implementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
+	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 
 	implementation "com.github.DarkKronicle.Konstruct:addons:${project.konstruct_version}"
 	implementation "com.github.DarkKronicle.Konstruct:core:${project.konstruct_version}"
@@ -64,7 +73,7 @@ dependencies {
 
 }
 
-configurations.all {
+configurations.configureEach {
 	exclude group: "me.fallenbreath", module: "mixin-auditor"
 }
 
@@ -78,7 +87,7 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release = 21
+	it.options.release = 25
 }
 
 //task sourcesJar(type: Jar, dependsOn: classes) {
@@ -113,11 +122,11 @@ publishing {
 	publications {
 		mavenJava(MavenPublication) {
 			// add all the jars that should be included when publishing to maven
-			artifact(remapJar) {
-				builtBy remapJar
+			artifact(jar) {
+				builtBy jar
 			}
 			artifact(sourcesJar) {
-				builtBy remapSourcesJar
+				builtBy sourcesJar
 			}
 		}
 	}

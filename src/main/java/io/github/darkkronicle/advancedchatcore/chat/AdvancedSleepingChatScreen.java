@@ -11,9 +11,9 @@ import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.KeyCodes;
 import fi.dy.masa.malilib.util.StringUtils;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 
 public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
 
@@ -37,7 +37,7 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
         this.stopSleeping();
     }
 
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         int keyCode = input.key();
         int scanCode = input.scancode();
         int modifiers = input.modifiers();
@@ -51,7 +51,7 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
                 MessageSender.getInstance().sendMessage(string);
             }
             this.chatField.setText("");
-            this.client.inGameHud.getChatHud().resetScroll();
+            this.mc.gui.hud.getChat().resetChatScroll();
             resetCurrentMessage();
             return true;
         }
@@ -59,10 +59,10 @@ public class AdvancedSleepingChatScreen extends AdvancedChatScreen {
     }
 
     private void stopSleeping() {
-        ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.player.networkHandler;
-        clientPlayNetworkHandler.sendPacket(
-                new ClientCommandC2SPacket(
-                        this.client.player, ClientCommandC2SPacket.Mode.STOP_SLEEPING));
+        ClientPacketListener clientPlayNetworkHandler = this.mc.player.connection;
+        clientPlayNetworkHandler.send(
+                new ServerboundPlayerCommandPacket(
+                        this.mc.player, ServerboundPlayerCommandPacket.Action.STOP_SLEEPING));
         GuiBase.openGui(null);
     }
 }

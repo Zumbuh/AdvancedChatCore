@@ -7,16 +7,17 @@
  */
 package io.github.darkkronicle.advancedchatcore.mixin;
 
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.client.multiplayer.chat.GuiMessageSource;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public interface MixinChatHudInvoker {
-    @Invoker
-    void invokeAddMessage(Text message, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator);
+    @Invoker("addMessage")
+    void invokeAddMessage(Component message, @Nullable MessageSignature signature, GuiMessageSource source, @Nullable GuiMessageTag indicator);
 }

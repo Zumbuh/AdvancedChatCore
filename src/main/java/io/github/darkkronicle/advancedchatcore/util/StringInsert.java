@@ -1,7 +1,7 @@
 package io.github.darkkronicle.advancedchatcore.util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 /**
  * An interface to provide a way to get the text that should be replaced based off of the
@@ -15,5 +15,5 @@ public interface StringInsert {
      * @param match The current {@link StringMatch}
      * @return
      */
-    MutableText getText(Text current, StringMatch match);
+    MutableComponent getText(Component current, StringMatch match);
 }

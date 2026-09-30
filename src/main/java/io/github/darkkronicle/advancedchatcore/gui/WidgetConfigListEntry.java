@@ -7,7 +7,6 @@
  */
 package io.github.darkkronicle.advancedchatcore.gui;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fi.dy.masa.malilib.gui.GuiTextFieldGeneric;
 import fi.dy.masa.malilib.gui.widgets.WidgetBase;
@@ -20,11 +19,10 @@ import lombok.Getter;
 import lombok.Setter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.input.MouseButtonEvent;
+import fi.dy.masa.malilib.render.GuiContext;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 
 @Environment(EnvType.CLIENT)
 public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TYPE> {
@@ -64,12 +62,13 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, boolean selected) {
+    public void render(GuiContext context, int mouseX, int mouseY, boolean selected) {
         // RenderUtils.color(1f, 1f, 1f, 1f);
 
         // Draw a lighter background for the hovered and the selected entry
         if (selected || this.isMouseOver(mouseX, mouseY)) {
             RenderUtils.drawRect(
+                    context,
                     this.x,
                     this.y,
                     this.width,
@@ -77,6 +76,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
                     Colors.getInstance().getColorOrWhite("white").withAlpha(150).color());
         } else if (this.odd) {
             RenderUtils.drawRect(
+                    context,
                     this.x,
                     this.y,
                     this.width,
@@ -84,6 +84,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
                     Colors.getInstance().getColorOrWhite("white").withAlpha(70).color());
         } else {
             RenderUtils.drawRect(
+                    context,
                     this.x,
                     this.y,
                     this.width,
@@ -93,7 +94,6 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
 
         renderEntry(context, mouseX, mouseY, selected);
         // RenderUtils.color(1f, 1f, 1f, 1f);
-        GlStateManager._disableBlend();
 
         this.drawTextFields(mouseX, mouseY, context);
 
@@ -106,7 +106,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
      * Render's in the middle of the rendering cycle. After the background, but before it goes to
      * super.
      */
-    public void renderEntry(DrawContext context, int mouseX, int mouseY, boolean selected) {
+    public void renderEntry(GuiContext context, int mouseX, int mouseY, boolean selected) {
         String name = getName();
         this.drawString(
                 context,
@@ -119,7 +119,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
 
     @Override
     public void postRenderHovered(
-            DrawContext context, int mouseX, int mouseY, boolean selected) {
+            GuiContext context, int mouseX, int mouseY, boolean selected) {
         super.postRenderHovered(context, mouseX, mouseY, selected);
         if (hoverLines == null) {
             return;
@@ -134,7 +134,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
     }
 
     @Override
-    protected boolean onKeyTypedImpl(KeyInput input) {
+    protected boolean onKeyTypedImpl(KeyEvent input) {
         if (getTextFields() == null) {
             return false;
         }
@@ -147,7 +147,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
     }
 
     @Override
-    protected boolean onCharTypedImpl(CharInput input) {
+    protected boolean onCharTypedImpl(CharacterEvent input) {
         if (getTextFields() != null) {
             for (TextFieldWrapper<GuiTextFieldGeneric> field : getTextFields()) {
                 if (field != null && field.onCharTyped(input)) {
@@ -160,7 +160,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
     }
 
     @Override
-    protected boolean onMouseClickedImpl(Click click, boolean doubleClick) {
+    protected boolean onMouseClickedImpl(MouseButtonEvent click, boolean doubleClick) {
         if (super.onMouseClickedImpl(click, doubleClick)) {
             return true;
         }
@@ -168,7 +168,7 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
         if (getTextFields() != null) {
             for (TextFieldWrapper<GuiTextFieldGeneric> field : getTextFields()) {
                 if (field != null) {
-                    ret |= field.getTextField().mouseClicked(click, doubleClick);
+                    ret |= field.mouseClicked(click, doubleClick);
                 }
             }
         }
@@ -182,12 +182,12 @@ public abstract class WidgetConfigListEntry<TYPE> extends WidgetListEntryBase<TY
         return ret;
     }
 
-    protected void drawTextFields(int mouseX, int mouseY, DrawContext context) {
+    protected void drawTextFields(int mouseX, int mouseY, GuiContext context) {
         if (getTextFields() == null) {
             return;
         }
         for (TextFieldWrapper<GuiTextFieldGeneric> field : getTextFields()) {
-            field.getTextField().render(context, mouseX, mouseY, 0f);
+            field.draw(context, mouseX, mouseY);
         }
     }
 }

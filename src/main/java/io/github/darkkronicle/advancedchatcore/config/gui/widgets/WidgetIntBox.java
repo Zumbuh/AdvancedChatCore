@@ -15,32 +15,34 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.Font;
 
 public class WidgetIntBox extends GuiTextFieldGeneric {
 
     @Setter @Getter private Runnable apply = null;
 
-    public WidgetIntBox(int x, int y, int width, int height, TextRenderer textRenderer) {
+    public WidgetIntBox(int x, int y, int width, int height, Font textRenderer) {
         super(x, y, width, height, textRenderer);
-        this.setTextPredicate(
+        this.setResponder(
                 text -> {
                     if (text.equals("")) {
-                        return true;
+                        this.clearHoverTooltip();
+                        return;
                     }
                     try {
                         // Only allow numbers!
                         Integer.valueOf(text);
                     } catch (NumberFormatException e) {
-                        return false;
+                        this.setHoverTooltip("malilib.gui.text_field.invalid_integer");
+                        return;
                     }
-                    return true;
+                    this.clearHoverTooltip();
                 });
-        this.setDrawsBackground(true);
+        this.setBordered(true);
     }
 
     public Integer getInt() {
-        String text = this.getText();
+        String text = this.getValue();
         if (text == null || text.length() == 0) {
             return null;
         }

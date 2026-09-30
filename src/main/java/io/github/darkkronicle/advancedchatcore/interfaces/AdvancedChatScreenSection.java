@@ -9,15 +9,15 @@ package io.github.darkkronicle.advancedchatcore.interfaces;
 
 import io.github.darkkronicle.advancedchatcore.chat.AdvancedChatScreen;
 import lombok.Getter;
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Renderable;
 
 /**
  * A class meant to extend onto the {@link AdvancedChatScreen}
  *
  * <p>This is used so that many modules can add onto the screen without problems occuring.
  */
-public abstract class AdvancedChatScreenSection implements Drawable {
+public abstract class AdvancedChatScreenSection implements Renderable {
 
     /** The {@link AdvancedChatScreen} that is linked to this section */
     @Getter private final AdvancedChatScreen screen;
@@ -124,5 +124,5 @@ public abstract class AdvancedChatScreenSection implements Drawable {
      * @param mouseY MouseY
      * @param partialTicks Partial tick from the last tick
      */
-    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {}
+    public void extractRenderState(GuiGraphicsExtractor matrixStack, int mouseX, int mouseY, float partialTicks) {}
 }

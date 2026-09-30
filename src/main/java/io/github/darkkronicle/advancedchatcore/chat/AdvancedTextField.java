@@ -7,41 +7,32 @@
  */
 package io.github.darkkronicle.advancedchatcore.chat;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.platform.LogicOp;
+import io.github.darkkronicle.advancedchatcore.util.CursorUtil;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import fi.dy.masa.malilib.util.KeyCodes;
 import io.github.darkkronicle.advancedchatcore.config.ConfigStorage;
 import io.github.darkkronicle.advancedchatcore.util.StringMatch;
 import io.github.darkkronicle.advancedchatcore.util.StyleFormatter;
 import io.github.darkkronicle.advancedchatcore.util.TextBuilder;
 import io.github.darkkronicle.advancedchatcore.util.TextUtil;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gl.ShaderProgram;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-public class AdvancedTextField extends TextFieldWidget {
+public class AdvancedTextField extends EditBox {
 
     private final static int MAX_HISTORY = 50;
 
@@ -55,29 +46,29 @@ public class AdvancedTextField extends TextFieldWidget {
     private final List<String> history = new ArrayList<>();
 
     private int focusedTicks = 0;
-    private List<Text> renderLines = new ArrayList<>();
-    private TextRenderer textRenderer;
+    private List<Component> renderLines = new ArrayList<>();
+    private Font textRenderer;
     private String suggestion = null;
     private int maxLength = 32;
     private int selectionEnd;
     private int selectionStart;
     // TODO Split?
-    private BiFunction<String, Integer, OrderedText> renderTextProvider = (string, firstCharacterIndex) -> OrderedText.styledForwardsVisitedString(string, Style.EMPTY);
+    private BiFunction<String, Integer, FormattedCharSequence> renderTextProvider = (string, firstCharacterIndex) -> FormattedCharSequence.forward(string, Style.EMPTY);
 
     private int historyIndex = -1;
 
-    public AdvancedTextField(TextRenderer textRenderer, int x, int y, int width, int height, Text text) {
+    public AdvancedTextField(Font textRenderer, int x, int y, int width, int height, Component text) {
         this(textRenderer, x, y, width, height, null, text);
     }
 
     public AdvancedTextField(
-            TextRenderer textRenderer,
+            Font textRenderer,
             int x,
             int y,
             int width,
             int height,
-            @Nullable TextFieldWidget copyFrom,
-            Text text) {
+            @Nullable EditBox copyFrom,
+            Component text) {
         super(textRenderer, x, y, width, height, copyFrom, text);
         history.add("");
         this.textRenderer = textRenderer;
@@ -89,12 +80,12 @@ public class AdvancedTextField extends TextFieldWidget {
         focusedTicks++;
     }
 
-    public void setRenderTextProvider(BiFunction<String, Integer, OrderedText> renderTextProvider) {
+    public void setRenderTextProvider(BiFunction<String, Integer, FormattedCharSequence> renderTextProvider) {
         this.renderTextProvider = renderTextProvider;
     }
 
 
-    protected OrderedText getRenderableText() {
+    protected FormattedCharSequence getRenderableText() {
         return this.renderTextProvider.apply(this.getText(), 0);
     }
 
@@ -106,7 +97,7 @@ public class AdvancedTextField extends TextFieldWidget {
 
     public static boolean isUndo(int code) {
         // Undo (Ctrl + Z)
-        return code == KeyCodes.KEY_Z && MinecraftClient.getInstance().isCtrlPressed() && !MinecraftClient.getInstance().isAltPressed();
+        return code == KeyCodes.KEY_Z && Minecraft.getInstance().hasControlDown() && !Minecraft.getInstance().hasAltDown();
     }
 
     /** Triggers undo for the text box */
@@ -137,15 +128,15 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public void write(String text) {
-        super.write(text);
+    public void insertText(String text) {
+        super.insertText(text);
         updateHistory();
         updateRender();
     }
 
     @Override
-    public void eraseCharacters(int characterOffset) {
-        super.eraseCharacters(characterOffset);
+    public void deleteCharsToPos(int pos) {
+        super.deleteCharsToPos(pos);
         updateHistory();
         updateRender();
     }
@@ -155,24 +146,28 @@ public class AdvancedTextField extends TextFieldWidget {
         this.suggestion = suggestion;
     }
 
+    public boolean isMouseOverText(double mouseX, double mouseY) {
+        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.lineHeight + 2);
+        return mouseY >= renderY - 2
+                && mouseY <= getY() + height + 2
+                && mouseX >= getX() - 2
+                && mouseX <= getX() + width + 4;
+    }
+
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
-        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.fontHeight + 2);
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         double mouseX = click.x();
         double mouseY = click.y();
-        if (mouseY < renderY - 2
-                || mouseY > getY() + height + 2
-                || mouseX < getX() - 2
-                || mouseX > getX() + width + 4) {
+        if (!isMouseOverText(mouseX, mouseY)) {
             return false;
         }
-        if (!this.isInteractable()) {
+        if (!this.isActive()) {
             return false;
         }
         if (this.isValidClickButton(click.buttonInfo())) {
             boolean inside = this.isMouseOver(mouseX, mouseY);
             if (inside) {
-                this.playDownSound(MinecraftClient.getInstance().getSoundManager());
+                this.playDownSound(Minecraft.getInstance().getSoundManager());
                 this.onClick(click, doubled);
                 return true;
             }
@@ -181,12 +176,12 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        int color = 0xE0E0E0;
-        int cursor = getCursor();
+    public void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        int color = 0xFFE0E0E0;
+        int cursor = getCursorPosition();
         int cursorRow = renderLines.size() - 1;
         boolean renderCursor = this.isFocused() && focusedTicks / 6 % 2 == 0;
-        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.fontHeight + 2);
+        int renderY = getY() - (renderLines.size() - 1) * (textRenderer.lineHeight + 2);
         int endX = 0;
         int charCount = 0;
         int cursorX = -1;
@@ -206,57 +201,60 @@ public class AdvancedTextField extends TextFieldWidget {
         int y = getY()    ;
         context.fill(getX() - 2, renderY - 2, getX() + width + 4, getY() + height + 4, ConfigStorage.ChatScreen.COLOR.config.get().color());
         for (int line = 0; line < renderLines.size(); line++) {
-            Text text = renderLines.get(line);
+            Component text = renderLines.get(line);
             if (cursor >= charCount && cursor < text.getString().length() + charCount) {
-                cursorX = textRenderer.getWidth(text.getString().substring(0, cursor - charCount));
+                cursorX = textRenderer.width(text.getString().substring(0, cursor - charCount));
                 cursorRow = line;
             }
-            endX = textRenderer.getWidth(text);
-            context.drawTextWithShadow(textRenderer, text, x, renderY, color);
+            endX = textRenderer.width(text);
+            context.text(textRenderer, text, x, renderY, color);
             if (selection) {
                 if (!started && selStart >= charCount && selStart <= text.getString().length() + charCount) {
                     started = true;
-                    int startX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selStart - charCount)));
+                    int startX = textRenderer.width(TextUtil.truncate(text, new StringMatch("", 0, selStart - charCount)));
                     if (selEnd > charCount && selEnd <= text.getString().length() + charCount) {
                         ended = true;
-                        int sEndX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
-                        drawSelectionHighlight(context,x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
+                        drawSelectionHighlight(context,x + startX, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight + 1);
                     } else {
-                        int sEndX = textRenderer.getWidth(text);
-                        drawSelectionHighlight(context, x + startX, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(text);
+                        drawSelectionHighlight(context, x + startX, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight + 1);
                     }
                 } else if (started && !ended) {
                     if (selEnd >= charCount && selEnd <= text.getString().length() + charCount) {
                         ended = true;
-                        int sEndX = textRenderer.getWidth(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
-                        drawSelectionHighlight(context, x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(TextUtil.truncate(text, new StringMatch("", 0, selEnd - charCount)));
+                        drawSelectionHighlight(context, x, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight + 1);
                     } else {
-                        int sEndX = textRenderer.getWidth(text);
-                        drawSelectionHighlight(context, x, renderY - 1, x + sEndX, renderY + textRenderer.fontHeight);
+                        int sEndX = textRenderer.width(text);
+                        drawSelectionHighlight(context, x, renderY - 1, x + sEndX, renderY + textRenderer.lineHeight + 1);
                     }
                 }
             }
-            renderY += textRenderer.fontHeight + 2;
+            renderY += textRenderer.lineHeight + 2;
             charCount += text.getString().length();
         }
         if (cursorX < 0) {
             cursorX = endX;
         }
-        boolean cursorAtEnd = getCursor() == getText().length();
+        boolean cursorAtEnd = getCursorPosition() == getText().length();
         if (!cursorAtEnd && this.suggestion != null) {
-            context.drawTextWithShadow(textRenderer, this.suggestion, endX - 1, y, -8355712);
+            context.text(textRenderer, this.suggestion, x + endX - 1, y, -8355712);
         }
         if (renderCursor) {
-            int cursorY = y - (renderLines.size() - 1 - cursorRow) * (textRenderer.fontHeight + 2);
+            int cursorY = y - (renderLines.size() - 1 - cursorRow) * (textRenderer.lineHeight + 2);
             if (cursorAtEnd) {
-                context.fill(cursorX, cursorY - 1, cursorX + 1, cursorY + 1 + this.textRenderer.fontHeight, -3092272);
+                context.fill(x + cursorX, cursorY - 1, x + cursorX + 1, cursorY + 1 + this.textRenderer.lineHeight, -3092272);
             } else {
-                context.drawTextWithShadow(textRenderer, "_", x + cursorX, cursorY, color);
+                context.text(textRenderer, "_", x + cursorX, cursorY, color);
             }
+        }
+        if (isMouseOverText(mouseX, mouseY)) {
+            CursorUtil.requestCursor(context, CursorTypes.IBEAM);
         }
     }
 
-    private void drawSelectionHighlight(DrawContext context, int x1, int y1, int x2, int y2) {
+    private void drawSelectionHighlight(GuiGraphicsExtractor context, int x1, int y1, int x2, int y2) {
         int x = getX();
         int y = getY();
         if (x1 > x2) {
@@ -271,26 +269,29 @@ public class AdvancedTextField extends TextFieldWidget {
         }
         if (x2 > x + this.width) x2 = x + this.width;
         if (x1 > x + this.width) x1 = x + this.width;
-        int highlightColor = 0x800000FF;
-        context.fill(x1, y1, x2, y2, highlightColor);
+        context.textHighlight(x1, y1, x2, y2, true);
     }
 
     @Override
-    public void setSelectionStart(int cursor) {
-        this.selectionStart = MathHelper.clamp(cursor, 0, getText().length());
-        super.setSelectionStart(cursor);
+    public void setCursorPosition(int cursor) {
+        this.selectionStart = Mth.clamp(cursor, 0, getText().length());
+        super.setCursorPosition(cursor);
     }
 
     @Override
-    public void setSelectionEnd(int index) {
+    public void setHighlightPos(int index) {
         int i = getText().length();
-        this.selectionEnd = MathHelper.clamp(index, 0, i);
-        super.setSelectionEnd(index);
+        this.selectionEnd = Mth.clamp(index, 0, i);
+        super.setHighlightPos(index);
     }
 
     @Override
-    public SelectionType getType() {
-        return super.getType();
+    public NarrationPriority narrationPriority() {
+        return super.narrationPriority();
+    }
+
+    public String getText() {
+        return getValue();
     }
 
     /**
@@ -301,20 +302,24 @@ public class AdvancedTextField extends TextFieldWidget {
      */
     public void setText(String text, boolean update) {
         // Wrapper class for setText
-        super.setText(text);
+        super.setValue(text);
         if (update) {
             updateHistory();
         }
         updateRender();
     }
 
-    @Override
     public void setText(String text) {
         setText(text, true);
     }
 
+    @Override
+    public void setValue(String text) {
+        setText(text, true);
+    }
+
     private void updateRender() {
-        OrderedText formatted = renderTextProvider.apply(getText(), 0);
+        FormattedCharSequence formatted = renderTextProvider.apply(getText(), 0);
         renderLines = StyleFormatter.wrapText(textRenderer, getWidth(), new TextBuilder().append(formatted).build());
     }
 
@@ -357,13 +362,13 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
-        if (!this.isInteractable() || !this.isFocused()) {
+    public boolean keyPressed(KeyEvent input) {
+        if (!this.isActive() || !this.isFocused()) {
             return false;
         }
         int keyCode = input.key();
         if (isUndo(keyCode)) {
-            if (MinecraftClient.getInstance().isShiftPressed()) {
+            if (Minecraft.getInstance().hasShiftDown()) {
                 redo();
             } else {
                 undo();
@@ -374,7 +379,7 @@ public class AdvancedTextField extends TextFieldWidget {
     }
 
     @Override
-    public void appendClickableNarrations(NarrationMessageBuilder builder) {
+    public void updateWidgetNarration(NarrationElementOutput builder) {
         // Crashes here because Text is null
     }
 }

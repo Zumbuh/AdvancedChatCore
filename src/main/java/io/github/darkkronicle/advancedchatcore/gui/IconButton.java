@@ -1,5 +1,7 @@
 package io.github.darkkronicle.advancedchatcore.gui;
 
+import io.github.darkkronicle.advancedchatcore.util.CursorUtil;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import fi.dy.masa.malilib.render.RenderUtils;
@@ -7,15 +9,14 @@ import io.github.darkkronicle.advancedchatcore.util.Color;
 import io.github.darkkronicle.advancedchatcore.util.Colors;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.input.MouseButtonEvent;
+import fi.dy.masa.malilib.render.GuiContext;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.resources.Identifier;
 
 import java.util.function.Consumer;
 
@@ -64,10 +65,13 @@ public class IconButton extends CleanButton {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, boolean unused) {
+    public void render(GuiContext context, int mouseX, int mouseY, boolean unused) {
         int relMX = mouseX - x;
         int relMY = mouseY - y;
         hovered = relMX >= 0 && relMX <= width && relMY >= 0 && relMY <= height;
+        if (hovered) {
+            CursorUtil.requestCursor(context, CursorTypes.POINTING_HAND);
+        }
 
         Color plusBack = Colors.getInstance().getColorOrWhite("background").withAlpha(100);
         if (hovered) {
@@ -77,9 +81,9 @@ public class IconButton extends CleanButton {
         RenderUtils.drawRect(x, y, width, height, plusBack.color());
 
         // RenderUtils.color(1, 1, 1, 1);
-        GpuTexture gpuTexture = MinecraftClient.getInstance().getTextureManager().getTexture(icon).getGlTexture();
+        GpuTexture gpuTexture = Minecraft.getInstance().getTextureManager().getTexture(icon).getTexture();
         context.fill(x, y, x + width, y + height, plusBack.color());
-        context.drawTexture(
+        context.blit(
                 RenderPipelines.GUI_TEXTURED,
                 icon,
                 x + padding,
@@ -88,11 +92,13 @@ public class IconButton extends CleanButton {
                 width - padding * 2,
                 height - padding * 2,
                 iconWidth,
+                iconHeight,
+                iconWidth,
                 iconHeight
         );
         if (hovered && onHover != null) {
-            context.drawCenteredTextWithShadow(
-                    MinecraftClient.getInstance().textRenderer,
+            context.centeredText(
+                    Minecraft.getInstance().font,
                     onHover,
                     mouseX + 4,
                     mouseY - 16,
@@ -101,8 +107,8 @@ public class IconButton extends CleanButton {
     }
 
     @Override
-    protected boolean onMouseClickedImpl(Click click, boolean doubleClick) {
-        this.mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+    protected boolean onMouseClickedImpl(MouseButtonEvent click, boolean doubleClick) {
+        this.mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
         onClick.accept(this);
         return true;
     }

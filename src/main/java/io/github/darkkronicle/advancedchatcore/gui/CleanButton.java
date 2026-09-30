@@ -7,6 +7,8 @@
  */
 package io.github.darkkronicle.advancedchatcore.gui;
 
+import io.github.darkkronicle.advancedchatcore.util.CursorUtil;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import fi.dy.masa.malilib.gui.button.ButtonBase;
 import fi.dy.masa.malilib.render.RenderUtils;
 import io.github.darkkronicle.advancedchatcore.util.Color;
@@ -15,9 +17,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.Minecraft;
+import fi.dy.masa.malilib.render.GuiContext;
 
 /** A simple button */
 @EqualsAndHashCode(callSuper = false)
@@ -27,7 +28,7 @@ public class CleanButton extends ButtonBase {
 
     protected Color baseColor;
 
-    private MinecraftClient client = MinecraftClient.getInstance();
+    private Minecraft client = Minecraft.getInstance();
 
     /**
      * Constructs a new simple clean button
@@ -47,10 +48,13 @@ public class CleanButton extends ButtonBase {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, boolean selected) {
+    public void render(GuiContext context, int mouseX, int mouseY, boolean selected) {
         int relMX = mouseX - x;
         int relMY = mouseY - y;
         hovered = relMX >= 0 && relMX <= width && relMY >= 0 && relMY <= height;
+        if (hovered) {
+            CursorUtil.requestCursor(context, CursorTypes.POINTING_HAND);
+        }
         Color color = baseColor;
         if (hovered) {
             color = Colors.getInstance().getColor("white").get().withAlpha(color.alpha());

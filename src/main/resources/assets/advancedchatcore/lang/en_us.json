@@ -11,6 +11,10 @@
   "advancedchat.tab.advancedchatcore": "Core",
   "advancedchatcore.message.togglepermanent": "Toggled Permanent",
 
+  "advancedchatcore.context.cut": "Cut",
+  "advancedchatcore.context.copy": "Copy",
+  "advancedchatcore.context.paste": "Paste",
+
   "advancedchat.tab.hotkeys": "§cHotkeys",
   "advancedchatcore.config.tab.hotkeysgeneral": "§bCore",
   "advancedchat.config.hotkeys.opensettings": "Open Settings GUI",

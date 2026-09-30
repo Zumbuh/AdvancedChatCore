@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,12 +83,12 @@ public class MessageDispatcher {
                                         URI uri = new URI(url);
                                         ClickEvent clickEvent = new ClickEvent.OpenUrl(uri);
                                         if (current.getStyle().getClickEvent() == null) {
-                                            return Text.literal(match1.match).fillStyle(current.getStyle().withClickEvent(clickEvent));
+                                            return Component.literal(match1.match).withStyle(current.getStyle().withClickEvent(clickEvent));
                                         }
                                     } catch (URISyntaxException e) {
-                                        return Text.literal(match1.match).fillStyle(current.getStyle());
+                                        return Component.literal(match1.match).withStyle(current.getStyle());
                                     }
-                                    return MutableText.of(current.getContent()).fillStyle(current.getStyle());
+                                    return MutableComponent.create(current.getContents()).withStyle(current.getStyle());
                                 });
                     }
                     text = TextUtil.replaceStrings(text, insert);
@@ -122,7 +122,7 @@ public class MessageDispatcher {
      *
      * @param text Text that is received
      */
-    public void handleText(Text text, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    public void handleText(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         boolean previouslyBlank = text.getString().length() == 0;
         text = preFilter(text, signature, indicator);
         if (text.getString().length() == 0 && !previouslyBlank) {
@@ -132,9 +132,9 @@ public class MessageDispatcher {
         process(text, signature, indicator);
     }
 
-    private Text preFilter(Text text, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    private Component preFilter(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         for (IMessageFilter f : preFilters) {
-            Optional<Text> t = f.filter(text);
+            Optional<Component> t = f.filter(text);
             if (t.isPresent()) {
                 text = t.get();
             }
@@ -142,7 +142,7 @@ public class MessageDispatcher {
         return text;
     }
 
-    private void process(Text text, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    private void process(Component text, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         for (IMessageFilter f : processors) {
             f.filter(text);
         }

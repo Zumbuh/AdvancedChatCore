@@ -18,12 +18,13 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.MessageIndicator;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.chat.GuiMessageSource;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import org.jetbrains.annotations.Nullable;
 
 @Environment(EnvType.CLIENT)
@@ -31,13 +32,17 @@ public class ChatHistoryProcessor implements IMessageProcessor {
 
     private static final ThreadLocal<Boolean> isSending = ThreadLocal.withInitial(() -> false);
 
-    private static boolean sendToHud(Text text, @Nullable MessageSignatureData signature, MessageIndicator indicator) {
+    public static boolean isSendingToHud() {
+        return isSending.get();
+    }
+
+    private static boolean sendToHud(Component text, @Nullable MessageSignature signature, GuiMessageTag indicator) {
         if (isSending.get()) return false;
         if (AdvancedChatCore.FORWARD_TO_HUD) {
             try {
                 isSending.set(true);
-                ((MixinChatHudInvoker) MinecraftClient.getInstance().inGameHud.getChatHud())
-                        .invokeAddMessage(text, signature, indicator);
+                ((MixinChatHudInvoker) Minecraft.getInstance().gui.hud.getChat())
+                        .invokeAddMessage(text, signature, GuiMessageSource.PLAYER, indicator);
             } finally {
                 isSending.set(false);
             }
@@ -47,12 +52,12 @@ public class ChatHistoryProcessor implements IMessageProcessor {
     }
 
     @Override
-    public boolean process(Text text, @Nullable Text unfiltered) {
-        return process(text, unfiltered, null, MessageIndicator.system());
+    public boolean process(Component text, @Nullable Component unfiltered) {
+        return process(text, unfiltered, null, GuiMessageTag.system());
     }
 
     @Override
-    public boolean process(Text text, @Nullable Text unfiltered, @Nullable MessageSignatureData signature, @Nullable MessageIndicator indicator) {
+    public boolean process(Component text, @Nullable Component unfiltered, @Nullable MessageSignature signature, @Nullable GuiMessageTag indicator) {
         if (unfiltered == null) {
             unfiltered = text;
         }
@@ -61,7 +66,7 @@ public class ChatHistoryProcessor implements IMessageProcessor {
         LocalTime time = LocalTime.now();
         boolean showtime = ConfigStorage.General.SHOW_TIME.config.getBooleanValue();
         // Store original so we can get stuff without the time
-        Text original = text.copy();
+        Component original = text.copy();
         if (showtime) {
             DateTimeFormatter format =
                     DateTimeFormatter.ofPattern(
@@ -72,21 +77,21 @@ public class ChatHistoryProcessor implements IMessageProcessor {
             Style style = Style.EMPTY;
             TextColor textColor = TextColor.fromRgb(color.color());
             style = style.withColor(textColor);
-            text.getSiblings().add(0, Text.literal(replaceFormat.replaceAll("%TIME%", time.format(format))).fillStyle(style));
+            text.getSiblings().add(0, Component.literal(replaceFormat.replaceAll("%TIME%", time.format(format))).withStyle(style));
         }
 
         int width = 0;
         // Find player
         MessageOwner player =
                 SearchUtils.getAuthor(
-                        MinecraftClient.getInstance().getNetworkHandler(), unfiltered.getString());
+                        Minecraft.getInstance().getConnection(), unfiltered.getString());
         ChatMessage line = ChatMessage.builder()
                 .displayText(text)
                 .originalText(original)
                 .owner(player)
                 .id(0)
                 .width(width)
-                .creationTick(MinecraftClient.getInstance().inGameHud.getTicks())
+                .creationTick(Minecraft.getInstance().gui.hud.getGuiTicks())
                 .time(time)
                 .backgroundColor(null)
                 .build();
