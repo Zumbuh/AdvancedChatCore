@@ -36,6 +36,14 @@ public class WidgetListRegistryOption<T extends ConfigRegistryOption<?>>
     }
 
     @Override
+    public void resize(int width, int height) {
+        Screen parent = this.getParent();
+        this.setParent(null);
+        super.resize(width, height);
+        this.setParent(parent);
+    }
+
+    @Override
     protected WidgetRegistryOptionEntry<T> createListEntryWidget(
             int x, int y, int listIndex, boolean isOdd, T entry) {
         return new WidgetRegistryOptionEntry<T>(

@@ -36,6 +36,14 @@ public abstract class WidgetConfigList<TYPE, WIDGET extends WidgetConfigListEntr
     }
 
     @Override
+    public void resize(int width, int height) {
+        Screen parent = this.getParent();
+        this.setParent(null);
+        super.resize(width, height);
+        this.setParent(parent);
+    }
+
+    @Override
     protected void reCreateListEntryWidgets() {
         textFields.clear();
         super.reCreateListEntryWidgets();
